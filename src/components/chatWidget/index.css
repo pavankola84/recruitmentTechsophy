@@ -1,0 +1,24 @@
+.sxp_js_chat_chatHeadaer,
+.sxp_js_chat_chatIcon,
+.journeyTray,
+.trayBtn,
+.sxp_js_chat_closeIcon {
+  background-color: #025e5e;
+}
+
+.sxp_js_chat_chat {
+  height: 330px;
+}
+
+.sxp_js_chat_title {
+  font-size: 20px;
+}
+
+.sxp_js_chat_sxpChat.sxp_js_chat_fullScreen {
+  bottom: 0px;
+  height: 90%;
+}
+
+.sxp_js_chat_fullScreen .sxp_js_chat_chat {
+  height: 70%;
+}
