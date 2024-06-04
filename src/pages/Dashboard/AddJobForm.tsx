@@ -21,9 +21,8 @@ import { v4 as uuidv4 } from "uuid";
 import { useDispatch } from "react-redux";
 import { createJob, updateJob } from "../../services/JobService";
 import * as Yup from "yup";
-import { Country, State, City } from "country-state-city";
+import { Country, ICountry, State, City } from "country-state-city";
 import {
-  cityOptions,
   educationOptions,
   keySkillsOptions,
   departmentsAndCategories,
@@ -131,8 +130,14 @@ const AddJobForm: React.FC<JobFormProps> = ({
 
   const [formState, setFormState] = useState({
     ...formData,
-    status: dialogAction === "Add" ? "active" : formData.status || "active"
+    status: dialogAction === "Add" ? "active" : formData.status || "active",
+  
   });
+
+  const [countries, setCountries] = useState<ICountry[]>([]);
+
+  const [cities, setCities] = useState<any>([]);
+  const [selectedCities, setSelectedCities] = useState<any>([]);
 
   const handleAdd = async () => {
     const form = { ...formState, jobId: uuidv4() };
@@ -209,12 +214,25 @@ const AddJobForm: React.FC<JobFormProps> = ({
     }));
   };
 
-  // useEffect(() => {
-  //   setFormState(formData => ({
-  //     ...formData,
-  //     country: Country.getAllCountries(),
-  //   }));
-  // }, []);
+  const handleCountryChange = (countryCode: any) => {
+    let cities = City.getCitiesOfCountry(countryCode);
+
+    let uniqueNames = new Set();
+
+    let formattedCities: any = cities?.reduce((accumulator: any, item) => {
+        if (!uniqueNames.has(item.name)) { 
+            uniqueNames.add(item.name); 
+            accumulator.push({ label: item.name, value: item.name });
+        }
+        return accumulator;
+    }, []);
+
+    setCities(formattedCities);
+};
+
+  useEffect(() => {
+    setCountries(Country.getAllCountries());
+  }, []);
 
   return (
     <Box className={classes?.jobAddForm}>
@@ -359,6 +377,7 @@ const AddJobForm: React.FC<JobFormProps> = ({
                 )
               }
               renderInput={(params) => (
+
                 <TextField
                   required
                   {...params}
@@ -393,9 +412,11 @@ const AddJobForm: React.FC<JobFormProps> = ({
             <Select
               labelId="country-label"
               value={formState.country}
-              onChange={(e) =>
-                handleChange("country", e.target.value as string)
-              }
+              onChange={(e) => {
+                const value = e.target.value as string;
+                handleChange("country", value);
+                handleCountryChange(value);
+              }}
               label="Country"
               endAdornment={
                 formState.country && (
@@ -413,9 +434,9 @@ const AddJobForm: React.FC<JobFormProps> = ({
                 )
               }
             >
-              {Object.keys(departmentsAndCategories).map((department) => (
-                <MenuItem key={department} value={department}>
-                  {department}
+              {countries.map((country) => (
+                <MenuItem key={country.isoCode} value={country.isoCode}>
+                  {country.name}
                 </MenuItem>
               ))}
             </Select>
@@ -423,16 +444,18 @@ const AddJobForm: React.FC<JobFormProps> = ({
           <FormControl fullWidth className={classes?.textField}>
             <Autocomplete
               multiple
-              options={cityOptions}
-              getOptionLabel={(option) => option.label}
+              options={cities}
+              getOptionLabel={(option) => option?.label}
               value={formState.city.map((city: any) =>
-                cityOptions.find((option) => option.value === city)
+                console.log(cities.find((option: any) => option.value === city))
               )}
-              onChange={(event, newValue) =>
+              onChange={(event, newValue) => {
                 handleChange(
                   "city",
                   newValue.map((option) => option.value)
                 )
+                setSelectedCities(newValue)
+              }
               }
               renderInput={(params) => (
                 <TextField

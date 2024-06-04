@@ -49,3 +49,4 @@ export const ADD_JOBS = "/createJob";
 export const UPDATE_JOB = "/updateJob";
 export const GET_JOB_BY_ID = "/getJob";
 export const FILE_UPLOAD= "/uploadFile";
+export const APPLY_JOB= "/applyJob"

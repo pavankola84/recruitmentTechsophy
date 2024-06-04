@@ -141,13 +141,6 @@ function Dashboard() {
     setOpen(false);
   };
 
-  // useEffect(() => {
-  //   setFormData(formData => ({
-  //     ...formData,
-  //     country: Country.getAllCountries(),
-  //   }));
-  // }, []);
-
   return (
     <div className={classes?.dashboardContainer}>
       <div className={classes?.statusSection}>
