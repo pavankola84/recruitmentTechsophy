@@ -194,14 +194,14 @@ const Jobs = () => {
       headerAlign: "center",
       align: "center",
     },
-    {
-      field: "roleCategory",
-      headerName: "Role Category",
-      type: "string",
-      width: 130,
-      headerAlign: "center",
-      align: "center",
-    },
+    // {
+    //   field: "roleCategory",
+    //   headerName: "Role Category",
+    //   type: "string",
+    //   width: 130,
+    //   headerAlign: "center",
+    //   align: "center",
+    // },
     {
       field: "experience",
       headerName: "Experience",

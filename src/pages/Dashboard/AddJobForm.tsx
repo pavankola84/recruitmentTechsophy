@@ -3,7 +3,7 @@ import {
   Box,
   Typography,
   IconButton,
-  Paper,
+  Autocomplete,
   MenuItem,
   TextField,
   TextareaAutosize,
@@ -17,24 +17,17 @@ import CloseIcon from "@mui/icons-material/Close";
 import useCustomStyles from "../../hooks/CustomStylesHook";
 import { useTheme } from "@emotion/react";
 import { Clear } from "@mui/icons-material";
-import { request } from "../../services/Request";
-import { ADD_JOBS } from "../../constants/endpoints";
 import { v4 as uuidv4 } from "uuid";
 import { useDispatch } from "react-redux";
 import { createJob, updateJob } from "../../services/JobService";
-
-const cities = [
-  "Delhi",
-  "Mumbai",
-  "Bangalore",
-  "Chennai",
-  "Kolkata",
-  "Hyderabad",
-  "Pune",
-  "Ahmedabad",
-  "Jaipur",
-  "Surat",
-];
+import * as Yup from "yup";
+import { Country, State, City } from "country-state-city";
+import {
+  cityOptions,
+  educationOptions,
+  keySkillsOptions,
+  departmentsAndCategories,
+} from "./../../constants/addJob";
 
 interface JobFormProps {
   formData: any;
@@ -82,7 +75,6 @@ const styles = (theme: any) => ({
     "& .MuiInputLabel-root": {
       color: "#969696",
       fontSize: "0.8rem",
-
     },
     "& .MuiOutlinedInput-root": {
       fontSize: "0.8rem",
@@ -93,22 +85,58 @@ const styles = (theme: any) => ({
       "& input": {
         color: "#000",
         fontSize: "0.8rem",
-
       },
     },
   },
+  container: {
+    position: "relative",
+  },
+  addButton: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    color: "black",
+    border: "2px solid red",
+  },
 });
 
-const AddJobForm: React.FC<JobFormProps> = ({ formData, handleClose, dialogAction }) => {
+const validationSchema = Yup.object({
+  jobId: Yup.string().required("Job is required"),
+  employmentType: Yup.string().required("Employment Type is required"),
+  jobTitle: Yup.string().required("Job Title is required"),
+  experience: Yup.string().required("Experience is required"),
+  country: Yup.string().required("Country is required"),
+  city: Yup.array().min(1, "At least one city is required"),
+  keySkills: Yup.array().min(1, "At least one Key Skill is required"),
+  package: Yup.array().min(1, "Package is required"),
+  description: Yup.array().min(1, "Description is required"),
+  department: Yup.array().min(1, "Department is required"),
+  // roleCategory: Yup.array().min(1, "Role Category is required"),
+  aboutCompany: Yup.array().min(1, "About Company is required"),
+  education: Yup.string().required("Education is required"),
+  startDate: Yup.string().required("Start Date is required"),
+  endDate: Yup.string().required("End Date is required"),
+  status: Yup.string().required("Status is required"),
+  openings: Yup.string().required("Openings is required"),
+});
+
+const AddJobForm: React.FC<JobFormProps> = ({
+  formData,
+  handleClose,
+  dialogAction,
+}) => {
   const theme = useTheme();
   const classes = useCustomStyles(styles, theme);
   const dispatch = useDispatch();
 
-  const [formState, setFormState] = useState(formData);
+  const [formState, setFormState] = useState({
+    ...formData,
+    status: dialogAction === "Add" ? "active" : formData.status || "active"
+  });
 
   const handleAdd = async () => {
     const form = { ...formState, jobId: uuidv4() };
-    const response:any = await createJob(form);
+    const response: any = await createJob(form);
     console.log("Adding");
     console.log(response);
     if (response?.success) {
@@ -134,11 +162,11 @@ const AddJobForm: React.FC<JobFormProps> = ({ formData, handleClose, dialogActio
       });
     }
   };
-  
+
   const handleEdit = async () => {
     console.log("Editing");
     const form = { ...formState };
-    const response:any = await updateJob(form);
+    const response: any = await updateJob(form);
     console.log(response);
     if (response?.success) {
       handleClose();
@@ -163,10 +191,9 @@ const AddJobForm: React.FC<JobFormProps> = ({ formData, handleClose, dialogActio
       });
     }
   };
-  
 
   const handleClear = (key: keyof typeof formState): void => {
-    setFormState((prevState:any) => ({
+    setFormState((prevState: any) => ({
       ...prevState,
       [key]: Array.isArray(prevState[key]) ? [] : "",
     }));
@@ -176,11 +203,18 @@ const AddJobForm: React.FC<JobFormProps> = ({ formData, handleClose, dialogActio
     key: keyof typeof formState,
     value: string | number | Date | null | string[]
   ): void => {
-    setFormState((prevState:any) => ({
+    setFormState((prevState: any) => ({
       ...prevState,
       [key]: value,
     }));
   };
+
+  // useEffect(() => {
+  //   setFormState(formData => ({
+  //     ...formData,
+  //     country: Country.getAllCountries(),
+  //   }));
+  // }, []);
 
   return (
     <Box className={classes?.jobAddForm}>
@@ -198,6 +232,7 @@ const AddJobForm: React.FC<JobFormProps> = ({ formData, handleClose, dialogActio
           <TextField
             label="Job Title"
             fullWidth
+            required
             value={formState.jobTitle}
             onChange={(e) => handleChange("jobTitle", e.target.value)}
             className={classes?.textField}
@@ -206,6 +241,7 @@ const AddJobForm: React.FC<JobFormProps> = ({ formData, handleClose, dialogActio
             type="number"
             label="Openings"
             fullWidth
+            required
             value={formState.openings}
             onChange={(e) => handleChange("openings", parseInt(e.target.value))}
             className={classes?.textField}
@@ -213,7 +249,9 @@ const AddJobForm: React.FC<JobFormProps> = ({ formData, handleClose, dialogActio
         </Box>
         <Box className={classes?.rowFlex}>
           <FormControl fullWidth className={classes?.textField}>
-            <InputLabel id="employee-type-label">Employee Type</InputLabel>
+            <InputLabel id="employee-type-label" required>
+              Employee Type
+            </InputLabel>
             <Select
               labelId="employee-type-label"
               value={formState.employmentType}
@@ -240,22 +278,45 @@ const AddJobForm: React.FC<JobFormProps> = ({ formData, handleClose, dialogActio
               <MenuItem value="internship">Internship</MenuItem>
             </Select>
           </FormControl>
-          <TextField
-            type="number"
-            label="Required Experience (in years)"
-            fullWidth
-            value={formState.experience}
-            onChange={(e) =>
-              handleChange("experience", parseInt(e.target.value))
-            }
-            className={classes?.textField}
-          />
+          <FormControl fullWidth className={classes?.textField}>
+            <InputLabel id="experience-label" required>
+              Required Experience
+            </InputLabel>
+            <Select
+              labelId="experience-label"
+              value={formState.experience}
+              onChange={(e) => handleChange("experience", e.target.value)}
+              label="Required Experience"
+              endAdornment={
+                formState.experience && (
+                  <InputAdornment
+                    position="end"
+                    className={classes?.closeButton}
+                  >
+                    <IconButton
+                      onClick={() => handleClear("experience")}
+                      edge="end"
+                    >
+                      <Clear />
+                    </IconButton>
+                  </InputAdornment>
+                )
+              }
+            >
+              <MenuItem value="1-3 years">1-3 years</MenuItem>
+              <MenuItem value="3-5 years">3-5 years</MenuItem>
+              <MenuItem value="5-7 years">5-7 years</MenuItem>
+              <MenuItem value="7-9 years">7-9 years</MenuItem>
+              <MenuItem value="9 and above">9 and above</MenuItem>
+            </Select>
+          </FormControl>
         </Box>
         <Box className={classes?.rowFlex}>
           <TextField
             label="Start Date"
             type="date"
             fullWidth
+            required
             InputLabelProps={{ shrink: true }}
             value={formState.startDate}
             onChange={(e) =>
@@ -270,6 +331,7 @@ const AddJobForm: React.FC<JobFormProps> = ({ formData, handleClose, dialogActio
             label="End Date"
             type="date"
             fullWidth
+            required
             InputLabelProps={{ shrink: true }}
             value={formState.endDate}
             onChange={(e) =>
@@ -283,38 +345,37 @@ const AddJobForm: React.FC<JobFormProps> = ({ formData, handleClose, dialogActio
         </Box>
         <Box className={classes?.rowFlex}>
           <FormControl fullWidth className={classes?.textField}>
-            <InputLabel id="location-label">Location</InputLabel>
-            <Select
-              labelId="location-label"
+            <Autocomplete
               multiple
-              value={formState.location}
-              onChange={(e) =>
-                handleChange("location", e.target.value as string[])
-              }
-              label="Location"
-              endAdornment={
-                formState.location.length > 0 && (
-                  <InputAdornment
-                    position="end"
-                    className={classes?.closeButton}
-                  >
-                    <IconButton
-                      onClick={() => handleClear("location")}
-                      edge="end"
-                    >
-                      <Clear />
-                    </IconButton>
-                  </InputAdornment>
+              options={educationOptions}
+              getOptionLabel={(option) => option.label}
+              value={formState.education.map((education: any) =>
+                educationOptions.find((option) => option.value === education)
+              )}
+              onChange={(event, newValue) =>
+                handleChange(
+                  "education",
+                  newValue.map((option) => option.value)
                 )
               }
-            >
-              {cities.map((city) => (
-                <MenuItem key={city} value={city}>
-                  {city}
-                </MenuItem>
-              ))}
-            </Select>
+              renderInput={(params) => (
+                <TextField
+                  required
+                  {...params}
+                  label="Education"
+                  InputProps={{
+                    ...params.InputProps,
+                    endAdornment: (
+                      <React.Fragment>
+                        {params.InputProps.endAdornment}
+                      </React.Fragment>
+                    ),
+                  }}
+                />
+              )}
+            />
           </FormControl>
+
           <TextField
             label="Client Name"
             fullWidth
@@ -323,224 +384,170 @@ const AddJobForm: React.FC<JobFormProps> = ({ formData, handleClose, dialogActio
             className={classes?.textField}
           />
         </Box>
+
+        <Box className={classes?.rowFlex}>
+          <FormControl fullWidth className={classes?.textField}>
+            <InputLabel id="country-label" required>
+              Country
+            </InputLabel>
+            <Select
+              labelId="country-label"
+              value={formState.country}
+              onChange={(e) =>
+                handleChange("country", e.target.value as string)
+              }
+              label="Country"
+              endAdornment={
+                formState.country && (
+                  <InputAdornment
+                    position="end"
+                    className={classes?.closeButton}
+                  >
+                    <IconButton
+                      onClick={() => handleClear("country")}
+                      edge="end"
+                    >
+                      <Clear />
+                    </IconButton>
+                  </InputAdornment>
+                )
+              }
+            >
+              {Object.keys(departmentsAndCategories).map((department) => (
+                <MenuItem key={department} value={department}>
+                  {department}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControl fullWidth className={classes?.textField}>
+            <Autocomplete
+              multiple
+              options={cityOptions}
+              getOptionLabel={(option) => option.label}
+              value={formState.city.map((city: any) =>
+                cityOptions.find((option) => option.value === city)
+              )}
+              onChange={(event, newValue) =>
+                handleChange(
+                  "city",
+                  newValue.map((option) => option.value)
+                )
+              }
+              renderInput={(params) => (
+                <TextField
+                  required
+                  {...params}
+                  label="City"
+                  InputProps={{
+                    ...params.InputProps,
+                    endAdornment: (
+                      <React.Fragment>
+                        {params.InputProps.endAdornment}
+                      </React.Fragment>
+                    ),
+                  }}
+                />
+              )}
+            />
+          </FormControl>
+        </Box>
+
         <TextareaAutosize
           minRows={2}
-          placeholder="Job Description"
+          required
+          placeholder="Job Description *"
           value={formState.description}
           onChange={(e) => handleChange("description", e.target.value)}
           className={`${classes?.textArea} ${classes?.textField}`}
         />
-        <Box className={classes?.rowFlex}>
-          <FormControl fullWidth className={classes?.textField}>
-            <InputLabel id="department-type-label">Department</InputLabel>
-            <Select
-              labelId="department-type-label"
-              value={formState.department}
-              onChange={(e) =>
-                handleChange("department", e.target.value as string)
-              }
-              label="Department"
-              endAdornment={
-                formState.department && (
-                  <InputAdornment
-                    position="end"
-                    className={classes?.closeButton}
+
+        <FormControl fullWidth className={classes?.textField}>
+          <InputLabel id="department-type-label" required>
+            Department
+          </InputLabel>
+          <Select
+            labelId="department-type-label"
+            value={formState.department}
+            onChange={(e) =>
+              handleChange("department", e.target.value as string)
+            }
+            label="Department"
+            endAdornment={
+              formState.department && (
+                <InputAdornment position="end" className={classes?.closeButton}>
+                  <IconButton
+                    onClick={() => handleClear("department")}
+                    edge="end"
                   >
-                    <IconButton
-                      onClick={() => handleClear("department")}
-                      edge="end"
-                    >
-                      <Clear />
-                    </IconButton>
-                  </InputAdornment>
-                )
-              }
-            >
-              <MenuItem value="IT">IT</MenuItem>
-              <MenuItem value="Marketing">Marketing</MenuItem>
-              <MenuItem value="Business">Business</MenuItem>
-            </Select>
-          </FormControl>
-          <FormControl fullWidth className={classes?.textField}>
-            <InputLabel id="role-category-label">Role Category</InputLabel>
-            <Select
-              labelId="role-category-label"
-              value={formState.roleCategory}
-              onChange={(e) =>
-                handleChange("roleCategory", e.target.value as string)
-              }
-              label="Role Category"
-              endAdornment={
-                formState.roleCategory && (
-                  <InputAdornment
-                    position="end"
-                    className={classes?.closeButton}
-                  >
-                    <IconButton
-                      onClick={() => handleClear("roleCategory")}
-                      edge="end"
-                    >
-                      <Clear />
-                    </IconButton>
-                  </InputAdornment>
-                )
-              }
-            >
-              <MenuItem value="IT">IT</MenuItem>
-              <MenuItem value="Marketing">Marketing</MenuItem>
-              <MenuItem value="Business">Business</MenuItem>
-            </Select>
-          </FormControl>
-        </Box>
+                    <Clear />
+                  </IconButton>
+                </InputAdornment>
+              )
+            }
+          >
+            {Object.keys(departmentsAndCategories).map((department) => (
+              <MenuItem key={department} value={department}>
+                {department}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
         <TextareaAutosize
           minRows={2}
-          placeholder="About Company"
+          required
+          placeholder="About Company *"
           value={formState.aboutCompany}
           onChange={(e) => handleChange("aboutCompany", e.target.value)}
           className={`${classes?.textArea} ${classes?.textField}`}
         />
-<Box className={classes?.rowFlex}>
-          <FormControl fullWidth className={classes?.textField}>
-            <InputLabel id="key-skills-label">Key Skills</InputLabel>
-            <Select
-              labelId="key-skills-label"
-              multiple
-              value={formState.keySkills}
-              onChange={(e) =>
-                handleChange("keySkills", e.target.value as string[])
-              }
-              label="Key Skills"
-              endAdornment={
-                formState.keySkills.length > 0 && (
-                  <InputAdornment
-                    position="end"
-                    className={classes?.closeButton}
-                  >
-                    <IconButton
-                      onClick={() => handleClear("keySkills")}
-                      edge="end"
-                    >
-                      <Clear />
-                    </IconButton>
-                  </InputAdornment>
-                )
-              }
-            >
-              <MenuItem value="HTML">HTML</MenuItem>
-              <MenuItem value="CSS">CSS</MenuItem>
-              <MenuItem value="JavaScript">JavaScript</MenuItem>
-              <MenuItem value="React">React</MenuItem>
-            </Select>
-          </FormControl>
 
-          <FormControl fullWidth className={classes?.textField}>
-            <InputLabel id="status-type-label">Status</InputLabel>
-            <Select
-              labelId="status-type-label"
-              value={formState.status}
-              onChange={(e) => handleChange("status", e.target.value as string)}
-              label="Status"
-              endAdornment={
-                formState.status && (
-                  <InputAdornment
-                    position="end"
-                    className={classes?.closeButton}
-                  >
-                    <IconButton
-                      onClick={() => handleClear("status")}
-                      edge="end"
-                    >
-                      <Clear />
-                    </IconButton>
-                  </InputAdornment>
-                )
-              }
-            >
-              <MenuItem value="active">Active</MenuItem>
-              <MenuItem value="inactive">Inactive</MenuItem>
-            </Select>
-          </FormControl>
-        </Box>
-        {/* <TextField
-          label="Education"
-          fullWidth
-          value={formState.education}
-          onChange={(e) => handleChange("education", e.target.value)}
-          className={classes?.textField}
-        /> */}
-        <FormControl fullWidth className={classes?.textField}>
-            <InputLabel id="key-skills-label">Education</InputLabel>
-            <Select
-              labelId="key-skills-label"
-              multiple
-              value={formState.keySkills}
-              onChange={(e) =>
-                handleChange("keySkills", e.target.value as string[])
-              }
-              label="Highest Qualification"
-              endAdornment={
-                formState.keySkills.length > 0 && (
-                  <InputAdornment
-                    position="end"
-                    className={classes?.closeButton}
-                  >
-                    <IconButton
-                      onClick={() => handleClear("keySkills")}
-                      edge="end"
-                    >
-                      <Clear />
-                    </IconButton>
-                  </InputAdornment>
-                )
-              }
-            >
-              <MenuItem value="HTML">PG - Post Graduate</MenuItem>
-              <MenuItem value="CSS">UG - Under Graduate</MenuItem>
-              <MenuItem value="JavaScript">12th</MenuItem>
-            </Select>
-          </FormControl>
         <Box className={classes?.rowFlex}>
           <FormControl fullWidth className={classes?.textField}>
-            <InputLabel id="key-skills-label">Key Skills</InputLabel>
-            <Select
-              labelId="key-skills-label"
+            <Autocomplete
               multiple
-              value={formState.keySkills}
-              onChange={(e) =>
-                handleChange("keySkills", e.target.value as string[])
-              }
-              label="Key Skills"
-              endAdornment={
-                formState.keySkills.length > 0 && (
-                  <InputAdornment
-                    position="end"
-                    className={classes?.closeButton}
-                  >
-                    <IconButton
-                      onClick={() => handleClear("keySkills")}
-                      edge="end"
-                    >
-                      <Clear />
-                    </IconButton>
-                  </InputAdornment>
+              options={keySkillsOptions}
+              getOptionLabel={(option) => option.label}
+              value={formState.keySkills.map((skill: any) =>
+                keySkillsOptions.find((option) => option.value === skill)
+              )}
+              onChange={(event, newValue) =>
+                handleChange(
+                  "keySkills",
+                  newValue.map((option) => option.value)
                 )
               }
-            >
-              <MenuItem value="HTML">HTML</MenuItem>
-              <MenuItem value="CSS">CSS</MenuItem>
-              <MenuItem value="JavaScript">JavaScript</MenuItem>
-              <MenuItem value="React">React</MenuItem>
-            </Select>
+              renderInput={(params) => (
+                <TextField
+                  required
+                  {...params}
+                  label="Key Skills"
+                  InputProps={{
+                    ...params.InputProps,
+                    endAdornment: (
+                      <React.Fragment>
+                        {params.InputProps.endAdornment}
+                      </React.Fragment>
+                    ),
+                  }}
+                />
+              )}
+            />
           </FormControl>
 
           <FormControl fullWidth className={classes?.textField}>
-            <InputLabel id="status-type-label">Status</InputLabel>
+            <InputLabel id="status-type-label" required>
+              Status
+            </InputLabel>
             <Select
               labelId="status-type-label"
               value={formState.status}
               onChange={(e) => handleChange("status", e.target.value as string)}
               label="Status"
+              disabled={dialogAction === "Add"}
               endAdornment={
+                dialogAction === "Edit" &&
                 formState.status && (
                   <InputAdornment
                     position="end"
@@ -563,15 +570,14 @@ const AddJobForm: React.FC<JobFormProps> = ({ formData, handleClose, dialogActio
         </Box>
       </Box>
       <Box mt={2} display="flex" justifyContent="flex-end">
-          <Button
-            variant="contained"
-            color="primary"
-            className={classes?.saveButton}
-            onClick={dialogAction === 'Add' ? handleAdd : handleEdit}
-          >
-            {dialogAction} Job
-          </Button>
-        
+        <Button
+          variant="contained"
+          color="primary"
+          className={classes?.saveButton}
+          onClick={dialogAction === "Add" ? handleAdd : handleEdit}
+        >
+          {dialogAction} Job
+        </Button>
       </Box>
     </Box>
   );

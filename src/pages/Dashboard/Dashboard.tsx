@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import StatusTable from "./StatusTable";
 import { Button, Grid, Typography, Modal, Box } from "@mui/material";
 import StatusCard from "./StatusCards";
@@ -8,20 +8,23 @@ import Calender from "./Calender";
 import AddJobForm from "./AddJobForm";
 import useCustomStyles from "../../hooks/CustomStylesHook";
 import { useTheme } from "@emotion/react";
+import { Country, State, City } from "country-state-city";
+
 
 interface JobFormData {
   jobId: string;
   employmentType: string;
   jobTitle: string;
   experience: string;
-  location: string[];
+  country: string;
+  city: string[];
   package: string;
   description: string;
   department: string;
-  roleCategory: string;
+  // roleCategory: string;
   aboutCompany: string;
   clientName: string;
-  education: string;
+  education: string[];
   keySkills: string[];
   startDate: Date | null;
   endDate: Date | null;
@@ -111,14 +114,15 @@ function Dashboard() {
   const [formData, setFormData] = useState<JobFormData>({
     employmentType: "",
     jobTitle: "",
-    experience: "0",
-    location: [] as string[],
+    experience: "",
+    country: "",
+    city: [] as string[],
     description: "",
     department: "",
-    roleCategory: "",
+    // roleCategory: "",
     aboutCompany: "",
     clientName: "",
-    education: "",
+    education: [] as string[],
     keySkills: [] as string[],
     startDate: null as Date | null,
     endDate: null as Date | null,
@@ -131,12 +135,18 @@ function Dashboard() {
   const theme = useTheme();
   const classes = useCustomStyles(styles, theme);
   const [open, setOpen] = useState(false);
-  const [content, setContent] = useState("");
 
   const handleOpen = () => setOpen(true);
   const handleClose = () => {
     setOpen(false);
   };
+
+  // useEffect(() => {
+  //   setFormData(formData => ({
+  //     ...formData,
+  //     country: Country.getAllCountries(),
+  //   }));
+  // }, []);
 
   return (
     <div className={classes?.dashboardContainer}>
