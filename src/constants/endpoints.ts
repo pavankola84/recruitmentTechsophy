@@ -50,3 +50,7 @@ export const UPDATE_JOB = "/updateJob";
 export const GET_JOB_BY_ID = "/getJob";
 export const FILE_UPLOAD= "/uploadFile";
 export const APPLY_JOB= "/applyJob"
+
+export const GET_CLIENTS= "/getClients"
+export const GET_DEPARTMENTS= "/getDepartments"
+export const GET_SKILLS= "/getSkills"

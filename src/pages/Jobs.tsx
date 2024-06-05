@@ -194,14 +194,6 @@ const Jobs = () => {
       headerAlign: "center",
       align: "center",
     },
-    // {
-    //   field: "roleCategory",
-    //   headerName: "Role Category",
-    //   type: "string",
-    //   width: 130,
-    //   headerAlign: "center",
-    //   align: "center",
-    // },
     {
       field: "experience",
       headerName: "Experience",
@@ -234,7 +226,7 @@ const Jobs = () => {
   };
   useEffect(() => {
     getJobs();
-  }, [formData,data]);
+  }, []);
  
   return (
     <div className={classes?.tableContainer}>

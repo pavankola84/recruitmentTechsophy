@@ -12,6 +12,7 @@ import {
   FormControl,
   InputLabel,
   InputAdornment,
+  FormHelperText,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import useCustomStyles from "../../hooks/CustomStylesHook";
@@ -20,13 +21,14 @@ import { Clear } from "@mui/icons-material";
 import { v4 as uuidv4 } from "uuid";
 import { useDispatch } from "react-redux";
 import { createJob, updateJob } from "../../services/JobService";
-import * as Yup from "yup";
 import { Country, ICountry, State, City } from "country-state-city";
 import {
-  educationOptions,
-  keySkillsOptions,
-  departmentsAndCategories,
-} from "./../../constants/addJob";
+  getAllClients,
+  getAllDepartments,
+  getAllSkills,
+} from "../../services/DataService";
+import { educationOptions } from "./../../constants/addJob";
+import { Clients, Departments } from "../../constants/schema";
 
 interface JobFormProps {
   formData: any;
@@ -57,7 +59,6 @@ const styles = (theme: any) => ({
   },
   saveButton: {
     backgroundColor: theme.palette.secondary.main,
-    // "&:hover": { backgroundColor:  },
   },
   closeButton: {
     marginRight: "1.5rem",
@@ -65,7 +66,6 @@ const styles = (theme: any) => ({
   textArea: {
     resize: "none",
     outline: "none",
-    border: "1px solid #ccc",
     padding: "10px",
     borderRadius: "4px",
   },
@@ -99,26 +99,6 @@ const styles = (theme: any) => ({
   },
 });
 
-const validationSchema = Yup.object({
-  jobId: Yup.string().required("Job is required"),
-  employmentType: Yup.string().required("Employment Type is required"),
-  jobTitle: Yup.string().required("Job Title is required"),
-  experience: Yup.string().required("Experience is required"),
-  country: Yup.string().required("Country is required"),
-  city: Yup.array().min(1, "At least one city is required"),
-  keySkills: Yup.array().min(1, "At least one Key Skill is required"),
-  package: Yup.array().min(1, "Package is required"),
-  description: Yup.array().min(1, "Description is required"),
-  department: Yup.array().min(1, "Department is required"),
-  // roleCategory: Yup.array().min(1, "Role Category is required"),
-  aboutCompany: Yup.array().min(1, "About Company is required"),
-  education: Yup.string().required("Education is required"),
-  startDate: Yup.string().required("Start Date is required"),
-  endDate: Yup.string().required("End Date is required"),
-  status: Yup.string().required("Status is required"),
-  openings: Yup.string().required("Openings is required"),
-});
-
 const AddJobForm: React.FC<JobFormProps> = ({
   formData,
   handleClose,
@@ -131,18 +111,129 @@ const AddJobForm: React.FC<JobFormProps> = ({
   const [formState, setFormState] = useState({
     ...formData,
     status: dialogAction === "Add" ? "active" : formData.status || "active",
-  
+  });
+  const [countries, setCountries] = useState<ICountry[]>([]);
+  const [cities, setCities] = useState<any>([]);
+  const [clients, setClients] = useState<string[]>([]);
+  const [departments, setDepartments] = useState<string[]>([]);
+  const [skills, setSkills] = useState<any>([]);
+
+  const [errors, setErrors] = useState({
+    jobTitle: "",
+    experience: "",
+    employmentType: "",
+    country: "",
+    city: "",
+    description: "",
+    department: "",
+    aboutCompany: "",
+    education: "",
+    keySkills: "",
+    clientName: "",
+    startDate: "",
+    endDate: "",
+    status: "",
+    openings: "",
+    package: "",
   });
 
-  const [countries, setCountries] = useState<ICountry[]>([]);
+  const validateForm = () => {
+    let valid = true;
+    let newErrors = {
+      jobTitle: "",
+      experience: "",
+      employmentType: "",
+      country: "",
+      city: "",
+      description: "",
+      department: "",
+      aboutCompany: "",
+      education: "",
+      keySkills: "",
+      clientName: "",
+      startDate: "",
+      endDate: "",
+      status: "",
+      openings: "",
+      package: "",
+    };
 
-  const [cities, setCities] = useState<any>([]);
-  const [selectedCities, setSelectedCities] = useState<any>([]);
+    if (!formState.jobTitle) {
+      newErrors.jobTitle = "Job Title is required";
+      valid = false;
+    }
+
+    if (!formState.experience) {
+      newErrors.experience = "Experience is required";
+      valid = false;
+    }
+    if (!formState.employmentType) {
+      newErrors.employmentType = "Employee Type is required";
+      valid = false;
+    }
+    if (!formState.country) {
+      newErrors.country = "Country is required";
+      valid = false;
+    }
+    if (formState.city.length === 0) {
+      newErrors.city = "City is required";
+      valid = false;
+    }
+    if (!formState.description) {
+      newErrors.description = "Description is required";
+      valid = false;
+    }
+    if (!formState.department) {
+      newErrors.department = "Department is required";
+      valid = false;
+    }
+    if (!formState.aboutCompany) {
+      newErrors.aboutCompany = "About Company is required";
+      valid = false;
+    }
+    if (formState.education.length === 0) {
+      newErrors.education = "Education is required";
+      valid = false;
+    }
+    if (formState.keySkills.length === 0) {
+      newErrors.keySkills = "Key Skills is required";
+      valid = false;
+    }
+    if (!formState.startDate) {
+      newErrors.startDate = "Start Date is required";
+      valid = false;
+    }
+    if (!formState.endDate) {
+      newErrors.endDate = "End Date is required";
+      valid = false;
+    }
+    if (!formState.status) {
+      newErrors.status = "Status is required";
+      valid = false;
+    }
+    if (!formState.openings) {
+      newErrors.openings = "Openings is required";
+      valid = false;
+    }
+    if (!formState.package) {
+      newErrors.package = "Package is required";
+      valid = false;
+    }
+
+    setErrors(newErrors);
+    return valid;
+  };
 
   const handleAdd = async () => {
+    if (!validateForm()) {
+      //add alert
+      console.log("Form contains errors");
+      return;
+    }
+
     const form = { ...formState, jobId: uuidv4() };
     const response: any = await createJob(form);
-    console.log("Adding");
+    console.log("Adding Job");
     console.log(response);
     if (response?.success) {
       handleClose();
@@ -169,7 +260,13 @@ const AddJobForm: React.FC<JobFormProps> = ({
   };
 
   const handleEdit = async () => {
-    console.log("Editing");
+    if (!validateForm()) {
+      //add alert
+      console.log("Form contains errors");
+      return;
+    }
+
+    console.log("Updating Job");
     const form = { ...formState };
     const response: any = await updateJob(form);
     console.log(response);
@@ -212,26 +309,81 @@ const AddJobForm: React.FC<JobFormProps> = ({
       ...prevState,
       [key]: value,
     }));
+    setErrors((prevState) => ({
+      ...prevState,
+      [key]: "",
+    }));
   };
 
+  const formatDate = (date: Date | null) => {
+    if (!date) return "";
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+  const filterCountryWithCode = (code: any) => {
+    let contries = Country.getAllCountries();
+    let filiteredCountry = contries.filter(
+      (country) => country.isoCode === code
+    );
+    return filiteredCountry[0];
+  };
+
+  const filterCountryWithName = (name: any) => {
+    let contries = Country.getAllCountries();
+    let filiteredCountry = contries.filter((country) => country.name === name);
+    return filiteredCountry[0];
+  };
   const handleCountryChange = (countryCode: any) => {
     let cities = City.getCitiesOfCountry(countryCode);
 
     let uniqueNames = new Set();
 
     let formattedCities: any = cities?.reduce((accumulator: any, item) => {
-        if (!uniqueNames.has(item.name)) { 
-            uniqueNames.add(item.name); 
-            accumulator.push({ label: item.name, value: item.name });
-        }
-        return accumulator;
+      if (!uniqueNames.has(item.name)) {
+        uniqueNames.add(item.name);
+        accumulator.push(item.name);
+      }
+      return accumulator;
     }, []);
 
     setCities(formattedCities);
-};
+  };
 
   useEffect(() => {
     setCountries(Country.getAllCountries());
+    console.log("countries", Country.getAllCountries());
+    const country = filterCountryWithName(formState.country);
+    handleCountryChange(country?.isoCode);
+  }, []);
+
+  const getData = async () => {
+    try {
+      const responseClients = await getAllClients();
+      const responseDepartments = await getAllDepartments();
+      const responseSkills = await getAllSkills();
+
+      const clientNames = responseClients.data.map(
+        (client: Clients) => client.clientName
+      );
+      const departmentNames = responseDepartments.data.map(
+        (department: Departments) => department.departmentName
+      );
+      const skills = responseSkills.data[0].skills;
+
+      setClients(clientNames);
+      setDepartments(departmentNames);
+      setSkills(skills);
+      console.log(skills);
+    } catch (error) {
+      console.error("Error fetching clients:", error);
+    }
+  };
+
+  useEffect(() => {
+    getData();
   }, []);
 
   return (
@@ -254,6 +406,8 @@ const AddJobForm: React.FC<JobFormProps> = ({
             value={formState.jobTitle}
             onChange={(e) => handleChange("jobTitle", e.target.value)}
             className={classes?.textField}
+            error={!!errors.jobTitle}
+            helperText={errors.jobTitle}
           />
           <TextField
             type="number"
@@ -263,10 +417,16 @@ const AddJobForm: React.FC<JobFormProps> = ({
             value={formState.openings}
             onChange={(e) => handleChange("openings", parseInt(e.target.value))}
             className={classes?.textField}
+            error={!!errors.openings}
+            helperText={errors.openings}
           />
         </Box>
         <Box className={classes?.rowFlex}>
-          <FormControl fullWidth className={classes?.textField}>
+          <FormControl
+            fullWidth
+            className={classes?.textField}
+            error={!!errors.employmentType}
+          >
             <InputLabel id="employee-type-label" required>
               Employee Type
             </InputLabel>
@@ -295,8 +455,13 @@ const AddJobForm: React.FC<JobFormProps> = ({
               <MenuItem value="part-time">Part Time</MenuItem>
               <MenuItem value="internship">Internship</MenuItem>
             </Select>
+            <FormHelperText>{errors.employmentType}</FormHelperText>
           </FormControl>
-          <FormControl fullWidth className={classes?.textField}>
+          <FormControl
+            fullWidth
+            className={classes?.textField}
+            error={!!errors.experience}
+          >
             <InputLabel id="experience-label" required>
               Required Experience
             </InputLabel>
@@ -327,6 +492,7 @@ const AddJobForm: React.FC<JobFormProps> = ({
               <MenuItem value="7-9 years">7-9 years</MenuItem>
               <MenuItem value="9 and above">9 and above</MenuItem>
             </Select>
+            <FormHelperText>{errors.experience}</FormHelperText>
           </FormControl>
         </Box>
         <Box className={classes?.rowFlex}>
@@ -336,14 +502,13 @@ const AddJobForm: React.FC<JobFormProps> = ({
             fullWidth
             required
             InputLabelProps={{ shrink: true }}
-            value={formState.startDate}
+            value={formState.startDate ? formatDate(formState.startDate) : ""}
             onChange={(e) =>
-              handleChange(
-                "startDate",
-                new Date(e.target.value).toISOString().split("T")[0]
-              )
+              handleChange("startDate", new Date(e.target.value))
             }
             className={classes?.textField}
+            error={!!errors.startDate}
+            helperText={errors.startDate}
           />
           <TextField
             label="End Date"
@@ -351,20 +516,22 @@ const AddJobForm: React.FC<JobFormProps> = ({
             fullWidth
             required
             InputLabelProps={{ shrink: true }}
-            value={formState.endDate}
-            onChange={(e) =>
-              handleChange(
-                "endDate",
-                new Date(e.target.value).toISOString().split("T")[0]
-              )
-            }
+            value={formState.endDate ? formatDate(formState.endDate) : ""}
+            onChange={(e) => handleChange("endDate", new Date(e.target.value))}
             className={classes?.textField}
+            error={!!errors.endDate}
+            helperText={errors.endDate}
           />
         </Box>
         <Box className={classes?.rowFlex}>
-          <FormControl fullWidth className={classes?.textField}>
+          <FormControl
+            fullWidth
+            className={classes?.textField}
+            error={!!errors.education}
+          >
             <Autocomplete
               multiple
+              disableCloseOnSelect
               options={educationOptions}
               getOptionLabel={(option) => option.label}
               value={formState.education.map((education: any) =>
@@ -377,11 +544,12 @@ const AddJobForm: React.FC<JobFormProps> = ({
                 )
               }
               renderInput={(params) => (
-
                 <TextField
                   required
                   {...params}
                   label="Education"
+                  error={!!errors.education}
+                  helperText={errors.education}
                   InputProps={{
                     ...params.InputProps,
                     endAdornment: (
@@ -395,17 +563,53 @@ const AddJobForm: React.FC<JobFormProps> = ({
             />
           </FormControl>
 
-          <TextField
-            label="Client Name"
+          <FormControl
             fullWidth
-            value={formState.clientName}
-            onChange={(e) => handleChange("clientName", e.target.value)}
             className={classes?.textField}
-          />
+            error={!!errors.clientName}
+          >
+            <InputLabel id="client-name-label" required>
+              Client Name
+            </InputLabel>
+            <Select
+              labelId="client-name-label"
+              value={formState.clientName}
+              onChange={(e) =>
+                handleChange("clientName", e.target.value as string)
+              }
+              label="Client Name"
+              endAdornment={
+                formState.clientName && (
+                  <InputAdornment
+                    position="end"
+                    className={classes?.closeButton}
+                  >
+                    <IconButton
+                      onClick={() => handleClear("clientName")}
+                      edge="end"
+                    >
+                      <Clear />
+                    </IconButton>
+                  </InputAdornment>
+                )
+              }
+            >
+              {clients.map((clientName) => (
+                <MenuItem key={clientName} value={clientName}>
+                  {clientName}
+                </MenuItem>
+              ))}
+            </Select>
+            <FormHelperText>{errors.clientName}</FormHelperText>
+          </FormControl>
         </Box>
 
         <Box className={classes?.rowFlex}>
-          <FormControl fullWidth className={classes?.textField}>
+          <FormControl
+            fullWidth
+            className={classes?.textField}
+            error={!!errors.country}
+          >
             <InputLabel id="country-label" required>
               Country
             </InputLabel>
@@ -415,7 +619,8 @@ const AddJobForm: React.FC<JobFormProps> = ({
               onChange={(e) => {
                 const value = e.target.value as string;
                 handleChange("country", value);
-                handleCountryChange(value);
+                const country = filterCountryWithName(value);
+                handleCountryChange(country?.isoCode);
               }}
               label="Country"
               endAdornment={
@@ -435,57 +640,68 @@ const AddJobForm: React.FC<JobFormProps> = ({
               }
             >
               {countries.map((country) => (
-                <MenuItem key={country.isoCode} value={country.isoCode}>
+                <MenuItem key={country.isoCode} value={country.name}>
                   {country.name}
                 </MenuItem>
               ))}
             </Select>
+            <FormHelperText>{errors.country}</FormHelperText>
           </FormControl>
+
           <FormControl fullWidth className={classes?.textField}>
             <Autocomplete
               multiple
+              disableCloseOnSelect
               options={cities}
-              getOptionLabel={(option) => option?.label}
-              value={formState.city.map((city: any) =>
-                console.log(cities.find((option: any) => option.value === city))
-              )}
-              onChange={(event, newValue) => {
-                handleChange(
-                  "city",
-                  newValue.map((option) => option.value)
-                )
-                setSelectedCities(newValue)
-              }
+              getOptionLabel={(option) => option}
+              value={formState.city}
+              onChange={(event, newValue: any) =>
+                setFormState((prevState: any) => ({
+                  ...prevState,
+                  city: newValue,
+                }))
               }
               renderInput={(params) => (
                 <TextField
                   required
-                  {...params}
                   label="City"
-                  InputProps={{
-                    ...params.InputProps,
-                    endAdornment: (
-                      <React.Fragment>
-                        {params.InputProps.endAdornment}
-                      </React.Fragment>
-                    ),
-                  }}
+                  {...params}
+                  error={!!errors.city}
+                  helperText={errors.city}
                 />
               )}
             />
           </FormControl>
         </Box>
 
-        <TextareaAutosize
-          minRows={2}
-          required
-          placeholder="Job Description *"
-          value={formState.description}
-          onChange={(e) => handleChange("description", e.target.value)}
-          className={`${classes?.textArea} ${classes?.textField}`}
-        />
+        <FormControl
+          fullWidth
+          className={classes?.textField}
+          error={!!errors.description}
+        >
+          <TextareaAutosize
+            minRows={2}
+            required
+            placeholder="Job Description *"
+            value={formState.description}
+            onChange={(e) => handleChange("description", e.target.value)}
+            style={{
+              border: errors.description ? "1px solid red" : "1px solid #ccc",
+            }}
+            className={`${classes?.textArea} ${classes?.textField}`}
+          />
+          {errors.description && (
+            <FormHelperText error sx={{ marginTop: "-0.8rem" }}>
+              {errors.description}
+            </FormHelperText>
+          )}
+        </FormControl>
 
-        <FormControl fullWidth className={classes?.textField}>
+        <FormControl
+          fullWidth
+          className={classes?.textField}
+          error={!!errors.department}
+        >
           <InputLabel id="department-type-label" required>
             Department
           </InputLabel>
@@ -509,57 +725,68 @@ const AddJobForm: React.FC<JobFormProps> = ({
               )
             }
           >
-            {Object.keys(departmentsAndCategories).map((department) => (
-              <MenuItem key={department} value={department}>
-                {department}
+            {departments.map((departmentName) => (
+              <MenuItem key={departmentName} value={departmentName}>
+                {departmentName}
               </MenuItem>
             ))}
           </Select>
+          <FormHelperText>{errors.department}</FormHelperText>
         </FormControl>
-
-        <TextareaAutosize
-          minRows={2}
-          required
-          placeholder="About Company *"
-          value={formState.aboutCompany}
-          onChange={(e) => handleChange("aboutCompany", e.target.value)}
-          className={`${classes?.textArea} ${classes?.textField}`}
-        />
+        <FormControl
+          fullWidth
+          className={classes?.textField}
+          error={!!errors.aboutCompany}
+        >
+          <TextareaAutosize
+            minRows={2}
+            required
+            placeholder="About Company *"
+            value={formState.aboutCompany}
+            onChange={(e) => handleChange("aboutCompany", e.target.value)}
+            style={{
+              border: errors.description ? "1px solid red" : "1px solid #ccc",
+            }}
+            className={`${classes?.textArea} ${classes?.textField}`}
+          />
+          {errors.aboutCompany && (
+            <FormHelperText error sx={{ marginTop: "-0.8rem" }}>
+              {errors.aboutCompany}
+            </FormHelperText>
+          )}
+        </FormControl>
 
         <Box className={classes?.rowFlex}>
           <FormControl fullWidth className={classes?.textField}>
             <Autocomplete
               multiple
-              options={keySkillsOptions}
-              getOptionLabel={(option) => option.label}
-              value={formState.keySkills.map((skill: any) =>
-                keySkillsOptions.find((option) => option.value === skill)
-              )}
-              onChange={(event, newValue) =>
-                handleChange(
-                  "keySkills",
-                  newValue.map((option) => option.value)
-                )
+              disableCloseOnSelect
+              options={skills}
+              getOptionLabel={(option) => option}
+              value={formState.keySkills}
+              onChange={(event, newValue: any) =>
+                setFormState((prevState: any) => ({
+                  ...prevState,
+                  keySkills: newValue,
+                }))
               }
               renderInput={(params) => (
                 <TextField
                   required
-                  {...params}
                   label="Key Skills"
-                  InputProps={{
-                    ...params.InputProps,
-                    endAdornment: (
-                      <React.Fragment>
-                        {params.InputProps.endAdornment}
-                      </React.Fragment>
-                    ),
-                  }}
+                  {...params}
+                  error={!!errors.keySkills}
+                  helperText={errors.keySkills}
                 />
               )}
             />
           </FormControl>
 
-          <FormControl fullWidth className={classes?.textField}>
+          <FormControl
+            fullWidth
+            className={classes?.textField}
+            error={!!errors.status}
+          >
             <InputLabel id="status-type-label" required>
               Status
             </InputLabel>
@@ -589,6 +816,7 @@ const AddJobForm: React.FC<JobFormProps> = ({
               <MenuItem value="active">Active</MenuItem>
               <MenuItem value="inactive">Inactive</MenuItem>
             </Select>
+            <FormHelperText>{errors.status}</FormHelperText>
           </FormControl>
         </Box>
       </Box>

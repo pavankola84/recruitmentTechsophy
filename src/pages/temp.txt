@@ -1,0 +1,24 @@
+<FormControl fullWidth className={classes?.textField}>
+            <Autocomplete
+              multiple
+              disableCloseOnSelect
+              options={skills}
+              getOptionLabel={(option) => option.label}
+              value={formState.keySkills}
+              onChange={(event, newValue: any) =>
+                setFormState((prevState: any) => ({
+                  ...prevState,
+                  keySkills: newValue,
+                }))
+              }
+              renderInput={(params) => (
+                <TextField
+                  required
+                  label="Key Skills"
+                  error={!!errors.keySkills}
+                  helperText={errors.keySkills}
+                  
+                />
+              )}
+            />
+          </FormControl>

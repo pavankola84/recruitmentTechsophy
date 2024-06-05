@@ -4,34 +4,10 @@ import { Button, Grid, Typography, Modal, Box } from "@mui/material";
 import StatusCard from "./StatusCards";
 import { statusCardData } from "../../data";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
-import Calender from "./Calender";
 import AddJobForm from "./AddJobForm";
 import useCustomStyles from "../../hooks/CustomStylesHook";
 import { useTheme } from "@emotion/react";
-import { Country, State, City } from "country-state-city";
-
-
-interface JobFormData {
-  jobId: string;
-  employmentType: string;
-  jobTitle: string;
-  experience: string;
-  country: string;
-  city: string[];
-  package: string;
-  description: string;
-  department: string;
-  // roleCategory: string;
-  aboutCompany: string;
-  clientName: string;
-  education: string[];
-  keySkills: string[];
-  startDate: Date | null;
-  endDate: Date | null;
-  status: string;
-  __v: number;
-  openings: number;
-}
+import { JobFormData } from "../../constants/schema";
 
 const styles = (theme: any) => ({
   dashboardContainer: {
@@ -119,7 +95,6 @@ function Dashboard() {
     city: [] as string[],
     description: "",
     department: "",
-    // roleCategory: "",
     aboutCompany: "",
     clientName: "",
     education: [] as string[],
